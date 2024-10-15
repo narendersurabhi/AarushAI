@@ -1,0 +1,11 @@
+version: '3.7'
+
+services:
+  prediction_microservice:
+    build: ./src
+    ports:
+      - "5000:5000"
+    environment:
+      - MODEL_PATH=/path/to/saved_model.pkl
+
+# docker-compose -f prediction_microservice/deployments/docker-compose.yml up

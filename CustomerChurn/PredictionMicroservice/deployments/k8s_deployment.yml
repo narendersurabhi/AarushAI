@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prediction-microservice
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: prediction-microservice
+  template:
+    metadata:
+      labels:
+        app: prediction-microservice
+    spec:
+      containers:
+      - name: prediction-microservice
+        image: myregistry/prediction-microservice:latest
+        ports:
+        - containerPort: 5000
+        env:
+        - name: MODEL_PATH
+          value: /path/to/saved_model.pkl
+
+# kubectl apply -f prediction_microservice/deployments/k8s_deployment.yml
+# kubectl apply -f prediction_microservice/deployments/k8s_service.yml

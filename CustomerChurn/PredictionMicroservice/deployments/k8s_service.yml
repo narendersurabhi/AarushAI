@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: prediction-microservice
+spec:
+  selector:
+    app: prediction-microservice
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5000
+  type: LoadBalancer
+
+
+# kubectl apply -f prediction_microservice/deployments/k8s_deployment.yml
+# kubectl apply -f prediction_microservice/deployments/k8s_service.yml
