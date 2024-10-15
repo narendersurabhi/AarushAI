@@ -1,14 +1,17 @@
 # AarushAI
-An end to end machine learning project.
 
-Following is the structure of the project
+Welcome to the AarushAI project, a comprehensive machine learning pipeline designed to handle data ingestion, model training, evaluation, deployment, and monitoring in a scalable cloud infrastructure.
 
+## Project Structure
+
+```plaintext
 AarushAI/
 ├── DataPipeline/ (Data Ingestion)
 │   ├── src/
 │   │   ├── main_spark.py
 │   │   ├── Dockerfile
-│   │   └── requirements.txt
+│   │   ├── requirements.txt
+│   │   └── dependencies/
 │   ├── deployments/
 │   │   ├── terraform/
 │   │   │   ├── main.tf
@@ -24,6 +27,7 @@ AarushAI/
 │   │   ├── save_model.py
 │   │   ├── Dockerfile
 │   │   ├── requirements.txt
+│   │   └── dependencies/
 │   ├── models/
 │   │   ├── model.pkl
 │   │   └── metrics/
@@ -41,7 +45,8 @@ AarushAI/
 │   ├── src/
 │   │   ├── app.py
 │   │   ├── Dockerfile
-│   │   └── requirements.txt
+│   │   ├── requirements.txt
+│   │   └── dependencies/
 │   ├── deployments/
 │   │   ├── docker-compose.yml
 │   │   ├── k8s_deployment.yml
