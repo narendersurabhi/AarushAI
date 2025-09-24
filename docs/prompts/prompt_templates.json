@@ -1,0 +1,63 @@
+{
+  "competency_extraction": {
+    "description": "Extract role-specific competencies from the target job description.",
+    "template": "You are an expert talent analyst. Review the job description JSON and produce a ranked list of competencies with evidence bullets. Return JSON with keys competencies (list of objects with name, priority, evidenceIndicators). Job description: {jobDescription}",
+    "stopSequences": ["</response>"],
+    "fewShot": [
+      {
+        "jobDescription": {"meta": {"title": "Data Scientist"}, "requirements": ["5+ years Python", "Experience with SageMaker"]},
+        "output": {"competencies": [{"name": "Machine Learning Delivery", "priority": 1, "evidenceIndicators": ["SageMaker pipelines"]}]}
+      }
+    ]
+  },
+  "experience_alignment": {
+    "description": "Align resume experiences to competencies and retrieved exemplars.",
+    "template": "Given competencies {competencies}, base resume {baseResume}, validated resumes {validatedResumes}, and retrieved chunks {retrievedChunks}, build an alignmentPlan JSON with fields alignments (list of competencyName, sourceExperience, validatedEvidenceIds).",
+    "stopSequences": ["</response>"],
+    "fewShot": [
+      {
+        "competencies": [{"name": "ML Ops"}],
+        "baseResume": {"experience": [{"title": "ML Engineer", "achievements": ["Automated model deployment"]}]},
+        "retrievedChunks": [{"metadata": {"type": "validated-resume"}, "text": "Implemented SageMaker"}],
+        "output": {"alignments": [{"competencyName": "ML Ops", "sourceExperience": {"title": "ML Engineer"}, "validatedEvidenceIds": ["validated-0"]}]}
+      }
+    ]
+  },
+  "bullet_rewrite": {
+    "description": "Rewrite bullets using STAR and quantified metrics.",
+    "template": "Rewrite each alignment in alignmentPlan {alignmentPlan} into STAR-formatted bullet achievements. Respect options {options}. Output JSON with bullets (list of objects containing competencyName, rewrittenBullet, impactMetrics).",
+    "stopSequences": ["</response>"],
+    "fewShot": [
+      {
+        "alignmentPlan": {"alignments": [{"competencyName": "ML Ops", "sourceExperience": {"title": "ML Engineer"}}]},
+        "options": {"tone": "professional"},
+        "output": {"bullets": [{"competencyName": "ML Ops", "rewrittenBullet": "Led deployment...", "impactMetrics": ["deployment frequency"]}]}
+      }
+    ]
+  },
+  "skills_harmonization": {
+    "description": "Merge extracted skills with validated taxonomy.",
+    "template": "Combine extracted skills {extractedSkills} with rewritten bullets {bulletRewrites} and alignment plan {alignmentPlan}. Output JSON with skills (ordered list of unique skills) and taxonomyTags.",
+    "stopSequences": ["</response>"],
+    "fewShot": [
+      {
+        "extractedSkills": [{"skill": "Python"}],
+        "bulletRewrites": {"bullets": [{"rewrittenBullet": "Drove Python automation"}]},
+        "output": {"skills": ["Python", "Automation"], "taxonomyTags": ["programming"]}
+      }
+    ]
+  },
+  "consistency_check": {
+    "description": "Produce final tailored resume with change log and optional cover letter.",
+    "template": "Synthesize job description {jobDescription}, base resume {baseResume}, rewritten bullets {rewrittenBullets}, skills {skills}, and options {options}. Output JSON with tailoredResume (following canonical schema), changeLog (list of objects with type/detail/rationale), and coverLetter (object with intro/body/tone) when options.includeCoverLetter is true. Ensure no hallucinations beyond provided evidence.",
+    "stopSequences": ["</response>"],
+    "fewShot": [
+      {
+        "rewrittenBullets": {"bullets": [{"competencyName": "ML Ops", "rewrittenBullet": "Scaled deployment"}]},
+        "skills": {"skills": ["Python"]},
+        "options": {"includeCoverLetter": false},
+        "output": {"tailoredResume": {"summary": "ML Engineer", "experience": [], "skills": ["Python"]}, "changeLog": [{"type": "bullet", "detail": "Updated ML Ops bullet", "rationale": "Match JD"}]}
+      }
+    ]
+  }
+}

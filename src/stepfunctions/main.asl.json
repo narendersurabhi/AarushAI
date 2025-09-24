@@ -1,0 +1,82 @@
+{
+  "Comment": "Resume tailoring pipeline",
+  "StartAt": "ParseDocuments",
+  "States": {
+    "ParseDocuments": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "FunctionName": "${ParseFunctionArn}",
+        "Payload.$": "$"
+      },
+      "Next": "EmbedContent"
+    },
+    "EmbedContent": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "FunctionName": "${EmbedFunctionArn}",
+        "Payload.$": "$"
+      },
+      "Next": "RetrieveContext"
+    },
+    "RetrieveContext": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "FunctionName": "${RetrieveFunctionArn}",
+        "Payload.$": "$"
+      },
+      "Next": "GenerateDraft"
+    },
+    "GenerateDraft": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "FunctionName": "${GenerateFunctionArn}",
+        "Payload.$": "$"
+      },
+      "Next": "ValidateDraft"
+    },
+    "ValidateDraft": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "FunctionName": "${ValidateFunctionArn}",
+        "Payload.$": "$"
+      },
+      "Next": "ValidationChoice"
+    },
+    "ValidationChoice": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.validation.status",
+          "StringEquals": "PASSED",
+          "Next": "RenderDocuments"
+        }
+      ],
+      "Default": "HandleValidationFailure"
+    },
+    "HandleValidationFailure": {
+      "Type": "Fail",
+      "Cause": "ValidationFailed",
+      "Error": "ResumeTailoring.ValidationFailed"
+    },
+    "RenderDocuments": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "OutputPath": "$.Payload",
+      "Parameters": {
+        "FunctionName": "${RenderFunctionArn}",
+        "Payload.$": "$"
+      },
+      "End": true
+    }
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/resume-canonical.json",
+  "type": "object",
+  "required": ["summary", "experience", "skills"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "properties": {
+        "sourceKey": {"type": ["string", "null"]},
+        "role": {"type": ["string", "null"]},
+        "industry": {"type": ["string", "null"]},
+        "outcome": {"type": ["string", "null"]},
+        "updatedAt": {"type": ["string", "null"], "format": "date"}
+      },
+      "additionalProperties": true
+    },
+    "summary": {"type": "string"},
+    "experience": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["title", "company", "startDate", "endDate", "achievements"],
+        "properties": {
+          "title": {"type": "string"},
+          "company": {"type": "string"},
+          "startDate": {"type": "string"},
+          "endDate": {"type": "string"},
+          "achievements": {
+            "type": "array",
+            "items": {"type": "string"}
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "education": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "skills": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "projects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "description": {"type": "string"}
+        },
+        "required": ["name", "description"],
+        "additionalProperties": true
+      }
+    },
+    "rawText": {"type": "string"}
+  },
+  "additionalProperties": true
+}
