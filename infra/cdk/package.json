@@ -1,0 +1,21 @@
+{
+  "name": "resume-tailor-cdk",
+  "version": "0.1.0",
+  "bin": {
+    "resume-tailor-cdk": "bin/app.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "cdk": "cdk"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.0",
+    "aws-cdk": "^2.115.0",
+    "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.115.0",
+    "constructs": "^10.3.0"
+  }
+}

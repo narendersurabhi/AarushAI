@@ -1,0 +1,201 @@
+openapi: 3.0.3
+info:
+  title: AWS Resume Tailoring API
+  version: 1.0.0
+servers:
+  - url: https://{api_id}.execute-api.{region}.amazonaws.com/prod
+    variables:
+      api_id:
+        default: your-api-id
+      region:
+        default: us-east-1
+paths:
+  /uploadJD:
+    post:
+      summary: Upload a job description document
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenantId, content]
+              properties:
+                tenantId:
+                  type: string
+                fileName:
+                  type: string
+                extension:
+                  type: string
+                contentType:
+                  type: string
+                content:
+                  type: string
+                  description: Base64 encoded document
+                metadata:
+                  type: object
+      responses:
+        '200':
+          description: Upload accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  key:
+                    type: string
+                  bucket:
+                    type: string
+  /uploadResume:
+    post:
+      summary: Upload a resume document
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenantId, content]
+              properties:
+                tenantId:
+                  type: string
+                fileName:
+                  type: string
+                extension:
+                  type: string
+                contentType:
+                  type: string
+                content:
+                  type: string
+                metadata:
+                  type: object
+      responses:
+        '200':
+          description: Upload accepted
+  /tailor:
+    post:
+      summary: Start tailoring process
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenantId]
+              properties:
+                tenantId:
+                  type: string
+                jobId:
+                  type: string
+                jobDescriptionKey:
+                  type: string
+                baseResumeKey:
+                  type: string
+                styleGuideKey:
+                  type: string
+                  description: Optional S3 key for a sample resume to match layout/style
+                styleGuideMetadata:
+                  type: object
+                  description: Additional rendering hints (fontFamily, fontSize, sectionOrder, bulletStyle)
+                styleGuide:
+                  type: object
+                  description: Inline style guide document pointer (s3Key/text/metadata)
+                validatedResumes:
+                  type: array
+                  items:
+                    type: object
+                options:
+                  type: object
+      responses:
+        '200':
+          description: Tailoring job started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  executionArn:
+                    type: string
+                  jobId:
+                    type: string
+  /status/{jobId}:
+    get:
+      summary: Retrieve job status
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tenantId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Current status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId:
+                    type: string
+                  status:
+                    type: string
+  /download/{jobId}:
+    get:
+      summary: Retrieve signed URLs for finished artifacts
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tenantId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Signed URLs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId:
+                    type: string
+                  artifacts:
+                    type: object
+  /artifacts:
+    get:
+      summary: List tenant artifacts
+      parameters:
+        - name: tenantId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Artifact keys
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  artifacts:
+                    type: array
+                    items:
+                      type: string
+components:
+  securitySchemes:
+    CognitoAuthorizer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - CognitoAuthorizer: []
