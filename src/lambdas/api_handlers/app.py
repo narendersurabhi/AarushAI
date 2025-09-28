@@ -116,6 +116,17 @@ def start_tailoring(event: Dict) -> Dict:
             "options": body.get("options", {}),
         }
 
+    style_pointer = body.get("styleGuide")
+    if not style_pointer and body.get("styleGuideKey"):
+        style_pointer = {
+            "s3Key": body.get("styleGuideKey"),
+            "metadata": body.get("styleGuideMetadata", {}),
+        }
+        if body.get("styleGuideDocumentType"):
+            style_pointer["documentType"] = body.get("styleGuideDocumentType")
+    if style_pointer:
+        execution_input["styleGuide"] = style_pointer
+
     if not execution_input.get("jobDescription") or not execution_input.get("baseResume"):
         return respond(400, {"message": "jobDescription and baseResume inputs are required"})
 

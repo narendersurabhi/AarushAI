@@ -91,6 +91,15 @@ paths:
                   type: string
                 baseResumeKey:
                   type: string
+                styleGuideKey:
+                  type: string
+                  description: Optional S3 key for a sample resume to match layout/style
+                styleGuideMetadata:
+                  type: object
+                  description: Additional rendering hints (fontFamily, fontSize, sectionOrder, bulletStyle)
+                styleGuide:
+                  type: object
+                  description: Inline style guide document pointer (s3Key/text/metadata)
                 validatedResumes:
                   type: array
                   items:

@@ -25,7 +25,7 @@
   },
   "bullet_rewrite": {
     "description": "Rewrite bullets using STAR and quantified metrics.",
-    "template": "Rewrite each alignment in alignmentPlan {alignmentPlan} into STAR-formatted bullet achievements. Respect options {options}. Output JSON with bullets (list of objects containing competencyName, rewrittenBullet, impactMetrics).",
+    "template": "Rewrite each alignment in alignmentPlan {alignmentPlan} into STAR-formatted bullet achievements. Respect options {options}. When options.styleGuide includes bulletStyle or tone guidance, mirror that style and avoid introducing unsupported formatting. Output JSON with bullets (list of objects containing competencyName, rewrittenBullet, impactMetrics).",
     "stopSequences": ["</response>"],
     "fewShot": [
       {
@@ -49,7 +49,7 @@
   },
   "consistency_check": {
     "description": "Produce final tailored resume with change log and optional cover letter.",
-    "template": "Synthesize job description {jobDescription}, base resume {baseResume}, rewritten bullets {rewrittenBullets}, skills {skills}, and options {options}. Output JSON with tailoredResume (following canonical schema), changeLog (list of objects with type/detail/rationale), and coverLetter (object with intro/body/tone) when options.includeCoverLetter is true. Ensure no hallucinations beyond provided evidence.",
+    "template": "Synthesize job description {jobDescription}, base resume {baseResume}, rewritten bullets {rewrittenBullets}, skills {skills}, options {options}, and style guide {styleGuide}. Output JSON with tailoredResume (following canonical schema and honoring section order, heading case, bullet style, and tone from the style guide), changeLog (list of objects with type/detail/rationale), and coverLetter (object with intro/body/tone) when options.includeCoverLetter is true. Ensure no hallucinations beyond provided evidence.",
     "stopSequences": ["</response>"],
     "fewShot": [
       {

@@ -72,6 +72,9 @@ class PromptChain:
         parsed = event["parsed"]
         retrieval = event["retrieval"]
         options = event.get("options", {})
+        style_profile = None
+        if isinstance(parsed.get("styleGuide"), dict):
+            style_profile = parsed["styleGuide"].get("profile")
 
         step1 = self._invoke_json("competency_extraction", {
             "jobDescription": parsed.get("jobDescription", {}),
@@ -86,7 +89,11 @@ class PromptChain:
 
         step3 = self._invoke_json("bullet_rewrite", {
             "alignmentPlan": step2.data,
-            "options": {"tone": options.get("tone", "professional"), "keywords": options.get("keywords", [])},
+            "options": {
+                "tone": options.get("tone", "professional"),
+                "keywords": options.get("keywords", []),
+                "styleGuide": style_profile or {},
+            },
         })
 
         step4 = self._invoke_json("skills_harmonization", {
@@ -103,7 +110,9 @@ class PromptChain:
             "options": {
                 "length": options.get("length", "2 pages"),
                 "includeCoverLetter": options.get("includeCoverLetter", False),
+                "styleGuide": style_profile or {},
             },
+            "styleGuide": style_profile or {},
         })
 
         tailored_resume = step5.data.get("tailoredResume", {})

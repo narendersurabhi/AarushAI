@@ -50,3 +50,30 @@ def test_parse_handler_basic():
     assert result["parsed"]["baseResume"]["experience"]
     assert result["parsed"]["validatedResumes"]
     assert result["parsed"]["extractedSkills"]
+
+
+def test_parse_handler_with_style_profile():
+    event = {
+        "tenantId": "tenant-2",
+        "jobId": "job-2",
+        "jobDescription": {"text": "JD text"},
+        "baseResume": {"text": "Summary"},
+        "validatedResumes": [],
+        "styleGuide": {
+            "text": "SUMMARY\nSKILLS\n• Python\n• AWS\nEXPERIENCE\nEngineer at Org\n- Built systems",
+            "metadata": {
+                "fontFamily": "Arial",
+                "fontSize": 11,
+                "sectionOrder": ["summary", "skills", "experience"],
+                "bulletStyle": "dash",
+            },
+        },
+    }
+
+    result = parse_app.lambda_handler(event, None)
+    style = result["parsed"].get("styleGuide", {}).get("profile")
+    assert style
+    assert style["fontFamily"] == "Arial"
+    assert style["fontSize"] == 22
+    assert style["sectionOrder"][0] == "summary"
+    assert style["bulletStyle"] in {"dash", "bullet"}

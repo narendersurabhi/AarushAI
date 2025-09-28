@@ -1,5 +1,4 @@
 import base64
-import base64
 import json
 from unittest.mock import MagicMock
 
@@ -65,3 +64,24 @@ def test_start_tailor(stub_clients):
     assert response["statusCode"] == 200
     sfn_client.start_execution.assert_called_once()
     ddb_client.put_item.assert_called()
+
+
+def test_start_tailor_with_style(stub_clients):
+    _, _, sfn_client = stub_clients
+    body = {
+        "tenantId": "tenant",
+        "jobDescriptionKey": "tenant/jd.docx",
+        "baseResumeKey": "tenant/resume.docx",
+        "styleGuideKey": "tenant/style.docx",
+        "styleGuideMetadata": {
+            "fontFamily": "Calibri",
+            "fontSize": 11,
+            "sectionOrder": ["skills", "summary", "experience"],
+        },
+    }
+    event = {"httpMethod": "POST", "path": "/tailor", "body": json.dumps(body)}
+    response = api_app.lambda_handler(event, None)
+    assert response["statusCode"] == 200
+    payload = json.loads(sfn_client.start_execution.call_args[1]["input"])
+    assert payload["styleGuide"]["s3Key"] == "tenant/style.docx"
+    assert payload["styleGuide"]["metadata"]["sectionOrder"][0] == "skills"

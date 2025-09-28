@@ -1,5 +1,7 @@
 import json
+from io import BytesIO
 from unittest.mock import MagicMock
+import zipfile
 
 import pytest
 
@@ -57,3 +59,50 @@ def test_render_handler_uploads_artifacts(stub_clients):
     assert "artifacts" in result
     assert s3_client.put_object.call_count >= 3
     dynamo_client.put_item.assert_called_once()
+
+
+def test_render_handler_applies_style_profile(stub_clients):
+    s3_client, _ = stub_clients
+    event = {
+        "tenantId": "tenant",
+        "jobId": "job-style",
+        "generation": {
+            "tailoredResume": {
+                "meta": {"role": "Designer"},
+                "summary": "Creative professional",
+                "experience": [
+                    {
+                        "title": "Designer",
+                        "company": "Studio",
+                        "startDate": "2021",
+                        "endDate": "Present",
+                        "achievements": ["Improved visual systems"],
+                    }
+                ],
+                "skills": ["Figma", "Illustrator"],
+                "projects": [],
+                "education": ["B.A. Design"],
+            },
+            "changeLog": [],
+        },
+        "parsed": {
+            "styleGuide": {
+                "profile": {
+                    "sectionOrder": ["skills", "summary", "experience", "education"],
+                    "headingCase": "upper",
+                    "bulletStyle": "dash",
+                    "fontFamily": "Arial",
+                    "fontSize": 26,
+                }
+            }
+        },
+    }
+
+    render_app.lambda_handler(event, None)
+
+    docx_call = s3_client.put_object.call_args_list[0]
+    body = docx_call.kwargs["Body"]
+    with zipfile.ZipFile(BytesIO(body), "r") as archive:
+        xml = archive.read("word/document.xml").decode("utf-8")
+    assert xml.index("SKILLS") < xml.index("SUMMARY")
+    assert "- Improved visual systems" in xml

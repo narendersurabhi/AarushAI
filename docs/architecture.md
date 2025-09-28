@@ -58,7 +58,7 @@
 3. **Parsing** – Parse Lambda invokes Textract (and Comprehend if enabled) to convert documents to normalized JSON aligned to the canonical resume schema.
 4. **Embedding & Retrieval** – Embed Lambda generates Titan embeddings and stores vectors in Amazon OpenSearch Serverless. Retrieve Lambda assembles a RAG context using JD, validated resumes, and feedback stored in DynamoDB.
 5. **Generation & Validation** – Generate Lambda runs Bedrock foundation models via guarded prompts. Validate Lambda enforces policy checks, schema compliance, and rejection criteria.
-6. **Rendering** – Render Lambda produces DOCX and PDF outputs plus change logs. Artifacts stored in S3 with signed URL retrieval via API.
+6. **Rendering** – Render Lambda produces DOCX and PDF outputs plus change logs, applying an optional sample resume style guide (section order, headings, fonts) before persisting artifacts in S3 for signed URL retrieval via API.
 7. **Observability & Governance** – CloudWatch captures logs/metrics, SQS DLQs capture failures, and CloudTrail + Bedrock guardrails enforce compliance.
 
 ## Multi-Tenancy Notes

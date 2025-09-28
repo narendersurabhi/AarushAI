@@ -46,22 +46,31 @@ def lambda_handler(event: Dict, _context) -> Dict:
     job_description = textract.parse_job_description(event["jobDescription"])
     base_resume = textract.parse_resume(event["baseResume"])
     validated_resumes = [textract.parse_resume(doc) for doc in event.get("validatedResumes", [])]
+    style_profile: Optional[Dict] = None
+    style_sample: Optional[Dict] = None
+    style_pointer = event.get("styleGuide")
+    if style_pointer:
+        style_sample = textract.parse_resume(style_pointer)
+        style_profile = StyleGuideBuilder.build(style_sample, style_pointer.get("metadata", {}))
 
     if pii_redactor:
         job_description = pii_redactor.redact_job(job_description)
         base_resume = pii_redactor.redact_resume(base_resume)
         validated_resumes = [pii_redactor.redact_resume(resume) for resume in validated_resumes]
+        if style_sample:
+            style_sample = pii_redactor.redact_resume(style_sample)
 
-    parsed_payload = {
-        **event,
-        "parsed": {
-            "jobDescription": job_description,
-            "baseResume": base_resume,
-            "validatedResumes": validated_resumes,
-            "extractedSkills": SkillMiner.aggregate_skills(job_description, base_resume, validated_resumes),
-        },
-        "timestamp": time.time(),
+    style_pack = StyleGuideBuilder.package(style_sample, style_profile, style_pointer)
+    parsed_block = {
+        "jobDescription": job_description,
+        "baseResume": base_resume,
+        "validatedResumes": validated_resumes,
+        "extractedSkills": SkillMiner.aggregate_skills(job_description, base_resume, validated_resumes),
     }
+    if style_pack:
+        parsed_block["styleGuide"] = style_pack
+
+    parsed_payload = {**event, "parsed": parsed_block, "timestamp": time.time()}
 
     return parsed_payload
 
@@ -216,6 +225,126 @@ class SkillMiner:
         ]
         enriched.sort(key=lambda item: (-int(item["frequency"]), item["skill"]))
         return enriched
+
+
+class StyleGuideBuilder:
+    default_section_order = ["summary", "skills", "experience", "projects", "education"]
+
+    @staticmethod
+    def build(resume: Dict, pointer_metadata: Dict) -> Dict:
+        raw_text = resume.get("rawText", "")
+        detected_order = StyleGuideBuilder._detect_section_order(raw_text)
+        metadata_order = pointer_metadata.get("sectionOrder")
+        section_order = metadata_order or detected_order
+        if metadata_order and detected_order:
+            merged: List[str] = []
+            for section in metadata_order + detected_order:
+                if section not in merged:
+                    merged.append(section)
+            section_order = merged
+        bullet_style = StyleGuideBuilder._detect_bullet_style(raw_text)
+        heading_case = StyleGuideBuilder._detect_heading_case(raw_text)
+        font_family = pointer_metadata.get("fontFamily") or "Calibri"
+        raw_font_size = pointer_metadata.get("fontSize")
+        if isinstance(raw_font_size, (int, float)) and raw_font_size <= 20:
+            font_size = int(raw_font_size * 2)
+        else:
+            font_size = int(raw_font_size) if isinstance(raw_font_size, (int, float)) else 22
+        include_dividers = pointer_metadata.get("includeSectionDividers")
+        layout_density = pointer_metadata.get("layoutDensity") or StyleGuideBuilder._infer_layout_density(raw_text)
+
+        profile = {
+            "sectionOrder": section_order or StyleGuideBuilder.default_section_order,
+            "headingCase": pointer_metadata.get("headingCase") or heading_case,
+            "bulletStyle": pointer_metadata.get("bulletStyle") or bullet_style,
+            "fontFamily": font_family,
+            "fontSize": font_size,
+            "layoutDensity": layout_density,
+        }
+        if include_dividers is not None:
+            profile["includeSectionDividers"] = include_dividers
+        if pointer_metadata.get("accentColor"):
+            profile["accentColor"] = pointer_metadata["accentColor"]
+        return profile
+
+    @staticmethod
+    def package(sample: Optional[Dict], profile: Optional[Dict], pointer: Optional[Dict]) -> Optional[Dict]:
+        if not sample and not profile:
+            return None
+        packaged: Dict[str, object] = {}
+        if profile:
+            packaged["profile"] = profile
+        if sample:
+            packaged["sample"] = {
+                "meta": sample.get("meta", {}),
+                "rawText": sample.get("rawText", ""),
+            }
+        if pointer:
+            packaged["source"] = {
+                "s3Key": pointer.get("s3Key"),
+                "metadata": pointer.get("metadata", {}),
+                "documentType": pointer.get("documentType"),
+            }
+        return packaged
+
+    @staticmethod
+    def _detect_section_order(raw_text: str) -> List[str]:
+        labels = [
+            ("summary", ["summary", "profile", "about"]),
+            ("experience", ["experience", "employment", "work history"]),
+            ("skills", ["skill", "competenc", "technolog"]),
+            ("projects", ["project", "portfolio"]),
+            ("education", ["education", "academ"]),
+        ]
+        order: List[str] = []
+        for line in raw_text.splitlines():
+            clean = line.strip()
+            lower = clean.lower()
+            for key, markers in labels:
+                if any(lower.startswith(marker) for marker in markers):
+                    if key not in order:
+                        order.append(key)
+        return order
+
+    @staticmethod
+    def _detect_bullet_style(raw_text: str) -> str:
+        for line in raw_text.splitlines():
+            stripped = line.lstrip()
+            if stripped.startswith("•"):
+                return "bullet"
+            if stripped.startswith("-"):
+                return "dash"
+            if stripped.startswith("*"):
+                return "asterisk"
+        return "bullet"
+
+    @staticmethod
+    def _detect_heading_case(raw_text: str) -> str:
+        headings = []
+        for line in raw_text.splitlines():
+            clean = line.strip()
+            if not clean or len(clean) > 40:
+                continue
+            if clean.isupper():
+                headings.append("upper")
+            elif clean.istitle():
+                headings.append("title")
+        if headings:
+            upper_ratio = headings.count("upper") / len(headings)
+            if upper_ratio >= 0.6:
+                return "upper"
+            if headings.count("title") >= len(headings) / 2:
+                return "title"
+        return "sentence"
+
+    @staticmethod
+    def _infer_layout_density(raw_text: str) -> str:
+        line_count = len([line for line in raw_text.splitlines() if line.strip()])
+        if line_count > 120:
+            return "condensed"
+        if line_count < 60:
+            return "spacious"
+        return "balanced"
 
 
 def normalize_job_description(raw_text: str, metadata: Dict) -> Dict:
